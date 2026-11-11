@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Electrochemical Series Virtual Lab</title>
+<style>
+:root{--navy:#10224b;--blue:#2355c7;--cyan:#24a7bd;--ink:#1d2940;--muted:#64748b;--bg:#f2f6fc;--line:#dce5f1;--good:#16845b;--bad:#c13d45}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:15px/1.55 Inter,Arial,sans-serif;color:var(--ink)}
+header{background:linear-gradient(125deg,#101c45,#1e4cae 65%,#188ba5);color:#fff;padding:28px 18px 25px}
+.wrap{max-width:1100px;margin:auto;padding:0 16px}
+.topline{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#c8e6ff;font-weight:700}
+h1{font-size:clamp(25px,5vw,40px);line-height:1.13;margin:10px 0}
+header p{margin:0;color:#e2efff;max-width:760px}
+.student{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.student span{background:#ffffff1c;border:1px solid #ffffff38;border-radius:30px;padding:6px 12px;font-size:13px}
+nav{background:white;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:4}
+.tabs{display:flex;gap:5px;overflow:auto;padding:8px 0}
+.tabs button{white-space:nowrap;background:transparent;color:#52617a;padding:10px 14px}
+.tabs button.active{background:#eaf0ff;color:var(--blue)}
+main{max-width:1100px;margin:22px auto;padding:0 16px 40px}
+.view{display:none}.view.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px}
+.card{background:white;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 6px 20px #10224b08;margin-bottom:15px}
+h2{font-size:21px;margin:0 0 10px;color:var(--navy)}h3{font-size:16px;margin:0 0 8px;color:var(--navy)}
+p{margin:7px 0}.muted{color:var(--muted);font-size:13px}
+label{display:block;font-weight:650;font-size:13px;margin:12px 0 5px}
+select,input{width:100%;border:1px solid #cbd6e5;border-radius:9px;padding:11px;background:#fff;color:var(--ink);font:inherit}
+button{border:0;border-radius:9px;padding:11px 15px;background:var(--blue);color:white;font-weight:700;cursor:pointer}
+button.secondary{background:#eaf0f8;color:#233453}button:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}
+.result{padding:13px;border-radius:11px;background:#eef5ff;border:1px solid #d7e6ff;margin-top:12px}
+.result.good{background:#eaf8f1;border-color:#c5ead8;color:#116747}.result.bad{background:#fff0f0;border-color:#f2d0d0;color:#a72c37}
+.big{font-size:30px;font-weight:800;color:var(--blue);line-height:1.2}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:10px;border-bottom:1px solid var(--line);text-align:left}th{background:#f1f5fb;color:#263b62}
+.pill{display:inline-block;border-radius:30px;background:#eaf0ff;color:#244eaf;padding:3px 9px;font-size:12px;font-weight:700}
+.equation{font-family:Georgia,serif;font-size:20px;background:#f5f8fd;border-radius:10px;padding:13px;overflow:auto}
+.diagram{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:18px;background:#f7faff;border-radius:12px;margin-top:12px}
+.electrode{width:90px;height:105px;border-radius:8px 8px 3px 3px;background:linear-gradient(90deg,#9ba9b9,#e5edf7,#9ba9b9);display:flex;align-items:center;justify-content:center;font-weight:800;color:#26334a;border:1px solid #8998ad}
+.beaker{border:2px solid #8bb9d8;border-top:0;border-radius:0 0 14px 14px;padding:12px 8px 8px;min-width:120px;text-align:center;background:linear-gradient(#e8f8ff,#c8e9f4);font-size:13px}
+.bridge{border-top:5px solid #e7bc59;border-radius:50%;width:90px;height:48px;align-self:flex-start;margin-top:6px}
+.error{color:var(--bad);font-size:13px;margin-top:8px;display:none}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
+@media(max-width:540px){.card{padding:14px}.equation{font-size:17px}}
+
+/* Printable report: hidden on screen, shown only when printing / saving PDF */
+#reportArea{display:none}
+@media print{
+  body{background:#fff}
+  header,nav,main,footer{display:none!important}
+  #reportArea{display:block!important;position:absolute;left:0;top:0;width:100%;padding:30px;color:#000;font:13px/1.5 Arial,sans-serif}
+  #reportArea h1{font-size:22px;color:#10224b;margin:0 0 4px}
+  #reportArea h2{font-size:15px;color:#10224b;margin:18px 0 6px;border-bottom:1px solid #999;padding-bottom:4px}
+  #reportArea table{width:100%;border-collapse:collapse;font-size:12px}
+  #reportArea td,#reportArea th{border:1px solid #bbb;padding:6px;text-align:left}
+  #reportArea th{background:#eee}
+  .no-print{display:none!important}
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<header><div class="wrap">
+<div class="topline">Chemistry • Interactive Virtual Laboratory</div>
+<h1>Electrochemical Series &amp;<br>Cell Potential Virtual Lab</h1>
+<p>Explore electrode potentials, predict redox reactions, build a galvanic cell and calculate cell EMF with an interactive Nernst equation simulator.</p>
+<div class="student">
+  <span>Student: <b id="hdrName">Not entered</b></span>
+  <span>Register No: <b id="hdrReg">Not entered</b></span>
+  <span>Department: <b id="hdrDept">Not entered</b></span>
+</div>
+</div></header>
+<nav><div class="wrap tabs">
+<button class="active" data-tab="details">My Details</button><button data-tab="learn">Learn</button><button data-tab="series">Electrochemical Series</button><button data-tab="cell">Cell Simulator</button><button data-tab="nernst">Nernst Lab</button><button data-tab="quiz">Assessment</button><button data-tab="report">Report &amp; PDF</button>
+</div></nav>
+<main>
+
+<section class="view active" id="details">
+<div class="card"><h2>Student details</h2><p class="muted">Enter your details. They appear in the header and on your PDF report.</p>
+<div class="grid">
+<div><label for="inName">Full name *</label><input id="inName" type="text" maxlength="80"></div>
+<div><label for="inReg">Register number *</label><input id="inReg" type="text" maxlength="30"></div>
+<div><label for="inDept">Department *</label><input id="inDept" type="text" placeholder="e.g. CSE" maxlength="40"></div>
+<div><label for="inCourse">Course / class (optional)</label><input id="inCourse" type="text" placeholder="e.g. Chemistry Lab I" maxlength="60"></div>
+</div>
+<div class="actions"><button onclick="saveDetails()">Save details</button><button class="secondary" onclick="clearDetails()">Clear</button></div>
+<div id="detailsMsg" class="result" style="display:none"></div>
+</div>
+</section>
+
+<section class="view" id="learn">
+<div class="grid">
+<div class="card"><span class="pill">Objective 01</span><h2>Understand electrode potential</h2><p>Standard reduction potential (E°) measures the tendency of a species to gain electrons under standard conditions.</p><div class="equation">M<sup>n+</sup> + ne<sup>−</sup> → M</div></div>
+<div class="card"><span class="pill">Objective 02</span><h2>Predict redox feasibility</h2><p>Compare two standard reduction potentials. The higher value is the cathode (reduction); the lower value is reversed for oxidation at the anode.</p><div class="equation">E°<sub>cell</sub> = E°<sub>cathode</sub> − E°<sub>anode</sub></div></div>
+<div class="card"><span class="pill">Objective 03</span><h2>Explore the Nernst equation</h2><p>See how concentration and temperature affect cell potential away from standard conditions.</p><div class="equation">E = E° − (0.0592/n) log Q</div><p class="muted">At 298 K, for a reaction involving n electrons.</p></div>
+</div>
+<div class="card"><h2>Core concepts</h2>
+<table><tr><th>Term</th><th>Meaning</th></tr><tr><td>Oxidation</td><td>Loss of electrons; occurs at the anode.</td></tr><tr><td>Reduction</td><td>Gain of electrons; occurs at the cathode.</td></tr><tr><td>Galvanic cell</td><td>Converts chemical energy into electrical energy.</td></tr><tr><td>Positive E°cell</td><td>Reaction is spontaneous as written under standard conditions.</td></tr><tr><td>Negative E°cell</td><td>Reverse reaction is spontaneous under standard conditions.</td></tr></table></div>
+</section>
+
+<section class="view" id="series">
+<div class="card"><h2>Standard reduction potential table</h2><p class="muted">Values are in volts (V).</p>
+<table id="seriesTable"><thead><tr><th>Reduction half-reaction</th><th>E° (V)</th><th>Relative tendency</th></tr></thead><tbody></tbody></table>
+<div class="result">More positive E° → stronger tendency to be reduced. The corresponding oxidized form is generally a stronger oxidizing agent.</div></div>
+</section>
+
+<section class="view" id="cell">
+<div class="card"><h2>Galvanic cell simulator</h2><p>Choose two half-cells. The simulator assigns the higher reduction potential as the cathode and calculates E°cell.</p>
+<div class="grid">
+<div><label for="metal1">Half-cell 1</label><select id="metal1"></select></div>
+<div><label for="metal2">Half-cell 2</label><select id="metal2"></select></div>
+</div>
+<div class="diagram">
+<div><div class="electrode" id="el1">M₁</div><div class="beaker" id="sol1">Solution 1</div></div>
+<div class="bridge"></div>
+<div><div class="electrode" id="el2">M₂</div><div class="beaker" id="sol2">Solution 2</div></div>
+</div>
+<div class="actions"><button onclick="calculateCell()">Build cell &amp; calculate EMF</button><button class="secondary" onclick="setExample()">Load Au/Cu example</button></div>
+<div id="cellResult" class="result">Choose two different half-cells and build your cell.</div>
+</div>
+</section>
+
+<section class="view" id="nernst">
+<div class="card"><h2>Nernst equation virtual experiment</h2><p>For the model cell Zn(s) + Cu²⁺(aq) → Zn²⁺(aq) + Cu(s), E°cell = +1.10 V and n = 2.</p>
+<div class="equation">E = 1.10 − (0.0592 / 2) log₁₀([Zn²⁺] / [Cu²⁺])</div>
+<div class="grid"><div><label for="zn">[Zn²⁺] concentration (M)</label><input id="zn" type="number" min="0.000001" step="any" value="1"></div><div><label for="cu">[Cu²⁺] concentration (M)</label><input id="cu" type="number" min="0.000001" step="any" value="1"></div></div>
+<div class="actions"><button onclick="calculateNernst()">Run experiment</button><button class="secondary" onclick="resetNernst()">Reset to standard conditions</button></div>
+<div id="nernstResult" class="result">At 1 M concentrations, Q = 1 and E = E° = +1.10 V.</div>
+</div>
+</section>
+
+<section class="view" id="quiz">
+<div class="card"><h2>Knowledge check</h2><p class="muted">5 questions • 2 marks each</p><div id="questions"></div><button onclick="gradeQuiz()">Submit answers</button><div id="quizResult" class="result" style="display:none"></div></div>
+</section>
+
+<section class="view" id="report">
+<div class="card"><h2>Lab report &amp; PDF</h2>
+<p class="muted">Your report includes your details and the results from this session. Run the experiments and submit the quiz first to include them.</p>
+<div class="actions"><button onclick="generatePDF()">Generate PDF</button><button class="secondary" onclick="refreshPreview()">Refresh preview</button></div>
+<div id="reportMsg" class="result bad" style="display:none"></div>
+<div id="reportPreview" class="result" style="background:#fff"></div>
+<p class="muted">Tip: in the print window, choose <b>Save as PDF</b> as the destination.</p>
+</div>
+</section>
+
+<footer>Electrochemistry Virtual Lab • Learning simulation for academic practice</footer>
+</main>
+
+<!-- Printable report (only visible when printing) -->
+<div id="reportArea"></div>
+
+<script>
+const data=[
+["F₂ + 2e⁻ → 2F⁻",2.87,"F₂/F⁻"],["Co³⁺ + e⁻ → Co²⁺",1.81,"Co³⁺/Co²⁺"],["Au⁺ + e⁻ → Au",1.69,"Au⁺/Au"],["Ce⁴⁺ + e⁻ → Ce³⁺",1.61,"Ce⁴⁺/Ce³⁺"],["Br₂ + 2e⁻ → 2Br⁻",1.09,"Br₂/Br⁻"],["Ag⁺ + e⁻ → Ag",.80,"Ag⁺/Ag"],["Cu²⁺ + 2e⁻ → Cu",.34,"Cu²⁺/Cu"],["AgCl + e⁻ → Ag + Cl⁻",.22,"AgCl/Ag"],["Sn⁴⁺ + 2e⁻ → Sn²⁺",.15,"Sn⁴⁺/Sn²⁺"],["2H⁺ + 2e⁻ → H₂",0,"H⁺/H₂"],["Pb²⁺ + 2e⁻ → Pb",-.13,"Pb²⁺/Pb"],["Sn²⁺ + 2e⁻ → Sn",-.14,"Sn²⁺/Sn"],["In³⁺ + 3e⁻ → In",-.34,"In³⁺/In"],["Fe²⁺ + 2e⁻ → Fe",-.44,"Fe²⁺/Fe"],["Zn²⁺ + 2e⁻ → Zn",-.76,"Zn²⁺/Zn"],["V²⁺ + 2e⁻ → V",-1.19,"V²⁺/V"],["Cs⁺ + e⁻ → Cs",-2.92,"Cs⁺/Cs"],["Li⁺ + e⁻ → Li",-3.05,"Li⁺/Li"]];
+
+/* ---------- Student details ---------- */
+const student={name:"",reg:"",dept:"",course:""};
+// Session results used in the report
+const rec={cell:null,nernst:null,quiz:null};
+
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+function saveDetails(){
+  const name=document.getElementById("inName").value.trim();
+  const reg=document.getElementById("inReg").value.trim();
+  const dept=document.getElementById("inDept").value.trim();
+  const course=document.getElementById("inCourse").value.trim();
+  const m=document.getElementById("detailsMsg");
+  if(!name||!reg||!dept){
+    m.style.display="block";m.className="result bad";
+    m.textContent="Please fill in name, register number and department.";return;
+  }
+  Object.assign(student,{name,reg,dept,course});
+  document.getElementById("hdrName").textContent=name;
+  document.getElementById("hdrReg").textContent=reg;
+  document.getElementById("hdrDept").textContent=dept;
+  m.style.display="block";m.className="result good";
+  m.textContent="Details saved. You can now run the experiments and generate your PDF.";
+}
+function clearDetails(){
+  ["inName","inReg","inDept","inCourse"].forEach(id=>document.getElementById(id).value="");
+  Object.assign(student,{name:"",reg:"",dept:"",course:""});
+  ["hdrName","hdrReg","hdrDept"].forEach(id=>document.getElementById(id).textContent="Not entered");
+  document.getElementById("detailsMsg").style.display="none";
+}
+
+/* ---------- Series table & selectors ---------- */
+document.querySelector("#seriesTable tbody").innerHTML=data.map(x=>`<tr><td>${x[0]}</td><td>${x[1]>0?"+":""}${x[1].toFixed(2)}</td><td>${x[1]>=1.5?"Very high":x[1]>=0?"Higher than SHE":"Lower than SHE"}</td></tr>`).join("");
+const s1=document.getElementById("metal1"),s2=document.getElementById("metal2");
+data.forEach((x,i)=>{s1.add(new Option(`${x[2]} (${x[1]>=0?"+":""}${x[1].toFixed(2)} V)`,i));s2.add(new Option(`${x[2]} (${x[1]>=0?"+":""}${x[1].toFixed(2)} V)`,i));});
+s1.value=2;s2.value=6;
+
+/* ---------- Cell simulator ---------- */
+function calculateCell(){
+  let a=data[+s1.value],b=data[+s2.value];
+  const r=document.getElementById("cellResult");
+  if(s1.value===s2.value){r.className="result bad";r.textContent="Select two different half-cells.";return}
+  let cath=a[1]>b[1]?a:b,an=a[1]>b[1]?b:a,E=cath[1]-an[1];
+  document.getElementById("el1").textContent=a[2].split("/")[0];
+  document.getElementById("el2").textContent=b[2].split("/")[0];
+  document.getElementById("sol1").textContent=a[2];
+  document.getElementById("sol2").textContent=b[2];
+  r.className="result "+(E>=0?"good":"bad");
+  r.innerHTML=`<b>Cell calculation</b><br>Cathode (reduction): ${cath[2]} = ${cath[1].toFixed(2)} V<br>Anode (reduction potential): ${an[2]} = ${an[1].toFixed(2)} V<br><div class="big">${E>=0?"+":""}${E.toFixed(2)} V</div><b>${E>0?"Spontaneous as written":E<0?"Non-spontaneous as written":"At equilibrium under standard conditions"}</b><br>Formula: E°cell = ${cath[1].toFixed(2)} − (${an[1].toFixed(2)})`;
+  rec.cell={cathode:cath[2],cathodeE:cath[1],anode:an[2],anodeE:an[1],E};
+}
+function setExample(){s1.value=2;s2.value=6;calculateCell()}
+
+/* ---------- Nernst experiment ---------- */
+function calculateNernst(){
+  let zn=Number(document.getElementById("zn").value),cu=Number(document.getElementById("cu").value),r=document.getElementById("nernstResult");
+  if(!(zn>0&&cu>0)){r.className="result bad";r.textContent="Enter positive concentrations greater than zero.";return}
+  let Q=zn/cu,E=1.10-(.0592/2)*Math.log10(Q);
+  r.className="result "+(E>=0?"good":"bad");
+  r.innerHTML=`Reaction quotient Q = ${Q.toPrecision(5)}<br><div class="big">${E>=0?"+":""}${E.toFixed(4)} V</div>Cell potential at 298 K. ${E>0?"Positive potential: spontaneous in the forward direction.":"Negative potential: reverse direction is favoured under these conditions."}`;
+  rec.nernst={zn,cu,Q:Q.toPrecision(5),E:E.toFixed(4)};
+}
+function resetNernst(){document.getElementById("zn").value=1;document.getElementById("cu").value=1;calculateNernst()}
+
+/* ---------- Quiz ---------- */
+const qs=[["Reduction occurs at the:",["Anode","Cathode","Salt bridge"],1],["A positive E°cell indicates:",["Spontaneous forward reaction","Non-spontaneous forward reaction","No reaction"],0],["Standard hydrogen electrode potential is:",["+1.00 V","0.00 V","−1.00 V"],1],["Oxidation means:",["Gain of electrons","Loss of electrons","Gain of protons"],1],["The Nernst equation accounts for:",["Concentration effects","Only electrode mass","Only pressure of solids"],0]];
+document.getElementById("questions").innerHTML=qs.map((q,i)=>`<div style="padding:12px 0;border-bottom:1px solid var(--line)"><b>${i+1}. ${q[0]}</b>${q[1].map((o,j)=>`<label style="font-weight:400"><input style="width:auto;margin-right:7px" type="radio" name="quiz${i}" value="${j}">${o}</label>`).join("")}</div>`).join("");
+function gradeQuiz(){
+  let n=0;
+  qs.forEach((q,i)=>{let v=document.querySelector(`input[name=quiz${i}]:checked`);if(v&&+v.value===q[2])n++});
+  let r=document.getElementById("quizResult");
+  r.style.display="block";r.className="result "+(n>=3?"good":"bad");
+  r.innerHTML=`<div class="big">${n*2} / 10</div>${n} out of 5 correct. ${n===5?"Excellent work!":"Review the learning section and try again."}`;
+  rec.quiz={correct:n,score:n*2};
+}
+
+/* ---------- Report & PDF ---------- */
+function buildReportHTML(){
+  const today=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+  const cellRow=rec.cell
+    ? `<tr><td>Cathode (reduction)</td><td>${esc(rec.cell.cathode)}</td><td>${rec.cell.cathodeE.toFixed(2)} V</td></tr>
+       <tr><td>Anode (reduction potential)</td><td>${esc(rec.cell.anode)}</td><td>${rec.cell.anodeE.toFixed(2)} V</td></tr>
+       <tr><td><b>E°cell</b></td><td>${rec.cell.E>=0?"+":""}${rec.cell.E.toFixed(2)} V</td><td>${rec.cell.E>0?"Spontaneous as written":rec.cell.E<0?"Non-spontaneous as written":"Equilibrium"}</td></tr>`
+    : `<tr><td colspan="3">Cell simulator not run in this session.</td></tr>`;
+  const nernstRow=rec.nernst
+    ? `<tr><td>[Zn²⁺]</td><td>${rec.nernst.zn} M</td><td rowspan="3">E = ${rec.nernst.E} V</td></tr>
+       <tr><td>[Cu²⁺]</td><td>${rec.nernst.cu} M</td><td></td></tr>
+       <tr><td>Reaction quotient Q</td><td>${rec.nernst.Q}</td><td></td></tr>`
+    : `<tr><td colspan="3">Nernst experiment not run in this session.</td></tr>`;
+  const quizRow=rec.quiz
+    ? `<tr><td>Knowledge check</td><td>${rec.quiz.correct} / 5 correct</td><td>${rec.quiz.score} / 10 marks</td></tr>`
+    : `<tr><td colspan="3">Assessment not submitted in this session.</td></tr>`;
+  const courseLine=student.course?`<tr><td>Course / class</td><td colspan="2">${esc(student.course)}</td></tr>`:"";
+  return `
+    <h1>Electrochemical Series &amp; Cell Potential Virtual Lab</h1>
+    <div>Virtual laboratory report • Date: ${today}</div>
+    <h2>Student details</h2>
+    <table>
+      <tr><td style="width:30%">Name</td><td colspan="2">${esc(student.name)}</td></tr>
+      <tr><td>Register number</td><td colspan="2">${esc(student.reg)}</td></tr>
+      <tr><td>Department</td><td colspan="2">${esc(student.dept)}</td></tr>
+      ${courseLine}
+    </table>
+    <h2>1. Galvanic cell simulation</h2>
+    <table><tr><th>Item</th><th>Value</th><th>Result</th></tr>${cellRow}</table>
+    <h2>2. Nernst equation experiment (298 K, n = 2)</h2>
+    <table><tr><th>Parameter</th><th>Value</th><th>Result</th></tr>${nernstRow}</table>
+    <h2>3. Knowledge check</h2>
+    <table><tr><th>Assessment</th><th>Performance</th><th>Score</th></tr>${quizRow}</table>
+    <h2>Declaration</h2>
+    <p>I confirm that the results above were obtained by me during this virtual laboratory session.</p>
+    <p style="margin-top:40px">Signature: ____________________ &nbsp;&nbsp;&nbsp; Date: ____________</p>`;
+}
+
+function validReport(){
+  const m=document.getElementById("reportMsg");
+  if(!student.name||!student.reg||!student.dept){
+    m.style.display="block";
+    m.textContent="Please save your student details (name, register number, department) in the My Details tab first.";
+    return false;
+  }
+  m.style.display="none";return true;
+}
+
+function refreshPreview(){
+  const p=document.getElementById("reportPreview");
+  if(!validReport()){p.innerHTML="";return false}
+  p.innerHTML=buildReportHTML();
+  return true;
+}
+
+function pdfText(s){
+  return String(s)
+    .replace(/²/g,"2").replace(/³/g,"3").replace(/⁴/g,"4")
+    .replace(/⁺/g,"+").replace(/⁻/g,"-").replace(/₁/g,"1")
+    .replace(/₂/g,"2").replace(/−/g,"-").replace(/→/g,"->")
+    .replace(/°/g," deg").replace(/[^\x00-\x7F]/g,"");
+}
+
+function generatePDF(){
+  if(!refreshPreview()) return;
+  const JS = window.jspdf && window.jspdf.jsPDF;
+  if(!JS){
+    document.getElementById("reportArea").innerHTML = buildReportHTML();
+    window.print();
+    return;
+  }
+  const doc = new JS({unit:"mm", format:"a4"});
+  const left = 15, width = 180;
+  let y = 20;
+  const today = new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+
+  const line = (text, size=11, bold=false) => {
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    doc.setFontSize(size);
+    doc.splitTextToSize(pdfText(text), width).forEach(part => {
+      if(y > 275){ doc.addPage(); y = 20; }
+      doc.text(part, left, y);
+      y += size * 0.5 + 1.5;
+    });
+  };
+  const gap = () => { y += 4; };
+
+  line("Electrochemical Series & Cell Potential Virtual Lab", 16, true); gap();
+  line("Virtual laboratory report | Date: " + today, 10); gap();
+
+  line("Student details", 13, true);
+  line("Name: " + student.name);
+  line("Register number: " + student.reg);
+  line("Department: " + student.dept);
+  if(student.course) line("Course / class: " + student.course);
+  gap();
+
+  line("1. Galvanic cell simulation", 13, true);
+  if(rec.cell){
+    const c = rec.cell;
+    line(`Cathode (reduction): ${c.cathode} = ${c.cathodeE.toFixed(2)} V`);
+    line(`Anode (reduction potential): ${c.anode} = ${c.anodeE.toFixed(2)} V`);
+    line(`E cell = ${c.E>=0?"+":""}${c.E.toFixed(2)} V (${c.E>0?"Spontaneous as written":c.E<0?"Non-spontaneous as written":"Equilibrium"})`, 11, true);
+  } else {
+    line("Cell simulator not run in this session.");
+  }
+  gap();
+
+  line("2. Nernst equation experiment (298 K, n = 2)", 13, true);
+  if(rec.nernst){
+    const n = rec.nernst;
+    line(`[Zn2+] = ${n.zn} M, [Cu2+] = ${n.cu} M`);
+    line(`Reaction quotient Q = ${n.Q}`);
+    line(`Cell potential E = ${n.E} V`, 11, true);
+  } else {
+    line("Nernst experiment not run in this session.");
+  }
+  gap();
+
+  line("3. Knowledge check", 13, true);
+  if(rec.quiz){
+    line(`${rec.quiz.correct} / 5 correct, score ${rec.quiz.score} / 10 marks`);
+  } else {
+    line("Assessment not submitted in this session.");
+  }
+  gap();
+
+  line("Declaration", 13, true);
+  line("I confirm that the results above were obtained by me during this virtual laboratory session.");
+  gap(); gap();
+  line("Signature: ______________________     Date: ______________");
+
+  doc.save(`Lab_Report_${student.reg}.pdf`);
+}
+
+window.addEventListener("afterprint",()=>{document.title="Electrochemical Series Virtual Lab";});
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  document.getElementById(b.dataset.tab).classList.add("active");
+  if(b.dataset.tab==="report")refreshPreview();
+  window.scrollTo({top:0,behavior:"smooth"});
+}));
+
+calculateCell();
+</script></body></html>
